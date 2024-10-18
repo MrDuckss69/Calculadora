@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora con Análisis Léxico y Árbol Sintáctico</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: rgb(177, 140, 245);
+            color: #fff;
+            text-align: center;
+        }
+        h1, h2 {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        #calculator {
+            display: inline-block;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.5em;
+            border-radius: 5px;
+            border: none;
+            text-align: right;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            margin: 0 auto;
+            border-collapse: collapse;
+        }
+        td {
+            padding: 15px;
+        }
+        button {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5em;
+            margin: 5px;
+            border-radius: 10px;
+            border: none;
+            background-color: #333;
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        button:hover {
+            background-color: #555;
+        }
+        #resultados, #arbol {
+            margin-top: 20px;
+            width: 80%;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        #resultados th, #arbol th {
+            background-color: #444;
+            color: #fff;
+            text-align: left;
+        }
+        #resultados td, #arbol td {
+            background-color: #f5f5f5;
+            color: #333;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        #resultados tr:hover, #arbol tr:hover {
+            background-color: #e0e0e0;
+        }
+        svg {
+            display: block;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+            width: 800px;
+            height: 600px;
+        }
+        circle {
+            fill: lightblue;
+            stroke: #333;
+            stroke-width: 2;
+        }
+        text {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            fill: black;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Calculadora con Análisis Léxico y Árbol Sintáctico</h1>
+<br>
+    <div id="calculator">
+        <input type="text" id="display" disabled>
+
+        <table>
+            <tr>
+                <td><button onclick="addToExpression('(')"> ( </button></td>
+                <td><button onclick="addToExpression(')')"> ) </button></td>
+                <td><button onclick="limpiar()"> C </button></td>
+                <td><button onclick="addToExpression('/')"> / </button></td>
+            </tr>
+            <tr>
+                <td><button onclick="addToExpression('7')">7</button></td>
+                <td><button onclick="addToExpression('8')">8</button></td>
+                <td><button onclick="addToExpression('9')">9</button></td>
+                <td><button onclick="addToExpression('*')"> * </button></td>
+            </tr>
+            <tr>
+                <td><button onclick="addToExpression('4')">4</button></td>
+                <td><button onclick="addToExpression('5')">5</button></td>
+                <td><button onclick="addToExpression('6')">6</button></td>
+                <td><button onclick="addToExpression('-')"> - </button></td>
+            </tr>
+            <tr>
+                <td><button onclick="addToExpression('1')">1</button></td>
+                <td><button onclick="addToExpression('2')">2</button></td>
+                <td><button onclick="addToExpression('3')">3</button></td>
+                <td><button onclick="addToExpression('+')"> + </button></td>
+            </tr>
+            <tr>
+                <td><button onclick="addToExpression('0')">0</button></td>
+                <td><button onclick="addToExpression('.')">.</button></td>
+                <td><button onclick="calcular()">=</button></td>
+                <td><button onclick="generarArbol()">Tree</button></td>
+            </tr>
+        </table>
+    </div>
+
+    <br>
+    <h2>Análisis Léxico</h2>
+    <table id="resultados">
+        <tr><th>Valor</th><th>Descripción</th></tr>
+    </table>
+
+    <br>
+    <h2>Árbol Sintáctico</h2>
+    <svg id="arbolSvg" viewBox="0 0 800 600"></svg>
+
+    <script>
+        let expression = '';
+
+        function addToExpression(value) {
+            expression += value;
+            document.getElementById('display').value = expression;
+        }
+
+        function limpiar() {
+            expression = '';
+            document.getElementById('display').value = '';
+            document.getElementById('resultados').innerHTML = '';  
+            document.getElementById('arbolSvg').innerHTML = '';  
+        }
+
+        function calcular() {
+            fetch('/calcular', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ expression: expression }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'error') {
+                    // Mostrar mensaje de error si lo hay
+                    document.getElementById('display').value = data.message;
+                } else {
+                    // Mostrar el resultado si no hay error
+                    document.getElementById('display').value = data.resultado;
+                }
+        
+                const tabla = document.getElementById('resultados');
+                tabla.innerHTML = '<tr><th>Valor</th><th>Descripción</th></tr>'; 
+                data.tokens_regex.forEach((item, index) => {
+                    let row = tabla.insertRow(index + 1);
+                    row.insertCell(0).innerText = item.token;
+                    row.insertCell(1).innerText = item.type;
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        
+
+        function generarArbol() {
+            fetch('/tree', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ expression: expression }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                const arbolSvg = document.getElementById('arbolSvg');
+                arbolSvg.innerHTML = ''; // Limpiar el SVG previo
+
+                const tree = data.arbol;
+                const radius = 20;
+                const offsetX = 80;
+                const offsetY = 60;
+                const startX = arbolSvg.clientWidth / 2;
+                const startY = 50;
+
+                function drawNode(node, x, y, parentX = null, parentY = null) {
+                    if (!node) return;
+
+                    // Dibujar el nodo (círculo)
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    circle.setAttribute("cx", x);
+                    circle.setAttribute("cy", y);
+                    circle.setAttribute("r", radius);
+                    circle.setAttribute("stroke", "black");
+                    circle.setAttribute("fill", "white");
+                    arbolSvg.appendChild(circle);
+
+                    // Dibujar el valor dentro del nodo
+                    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    text.setAttribute("x", x);
+                    text.setAttribute("y", y + 5);
+                    text.setAttribute("text-anchor", "middle");
+                    text.textContent = node.value;
+                    arbolSvg.appendChild(text);
+
+                    // Dibujar la línea conectando con el nodo padre
+                    if (parentX !== null && parentY !== null) {
+                        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                        line.setAttribute("x1", parentX);
+                        line.setAttribute("y1", parentY);
+                        line.setAttribute("x2", x);
+                        line.setAttribute("y2", y);
+                        line.setAttribute("stroke", "black");
+                        arbolSvg.appendChild(line);
+                    }
+
+                    // Dibujar los nodos hijos de forma recursiva
+                    const childX = x - offsetX / 2;
+                    const childY = y + offsetY;
+                    if (node.left) drawNode(node.left, childX, childY, x, y);
+                    if (node.right) drawNode(node.right, childX + offsetX, childY, x, y);
+                }
+
+                drawNode(tree, startX, startY);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
